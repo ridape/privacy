@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sensitive Data Exposure Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+        }
+        h1 {
+            color: #c00;
+            text-align: center;
+        }
+        .data-box {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .warning {
+            background-color: #fff3cd;
+            border-left: 5px solid #ffc107;
+            padding: 10px;
+            margin: 15px 0;
+        }
+        .hidden-data {
+            color: #999;
+            font-style: italic;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 14px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .loading {
+            color: #666;
+            font-style: italic;
+        }
+        .ip-info {
+            margin-left: 20px;
+            font-size: 0.9em;
+            color: #555;
+        }
+        .ip-version {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>Sensitive Data Websites Can Access</h1>
+    
+    <div class="warning">
+        <strong>Warning:</strong> This page demonstrates information that websites can collect about you. 
+        Be cautious about what sites you visit and what permissions you grant.
+    </div>
+    
+    <div class="data-box">
+        <h2>Network Information</h2>
+        <p>
+            <strong>IPv4 Address:</strong> 
+            <span id="ipv4-address" class="loading">Detecting...</span>
+            <span class="ip-info">(Older format, 32-bit)</span>
+        </p>
+        <p>
+            <strong>IPv6 Address:</strong> 
+            <span id="ipv6-address" class="loading">Detecting...</span>
+            <span class="ip-info">(Newer format, 128-bit)</span>
+        </p>
+        <p><strong>Approximate Location (from IP):</strong> <span id="ip-location" class="loading">Detecting...</span></p>
+        <p><strong>Precise Location (if granted):</strong> <span id="geolocation">Click <button onclick="getLocation()">Request Location</button></span></p>
+        <p class="hidden-data">Note: Precise location requires your permission but many sites prompt for this</p>
+    </div>
+    
+    <div class="data-box">
+        <h2>Basic Information</h2>
+        <p><strong>User Agent:</strong> <span id="user-agent"></span></p>
+        <p><strong>Screen Resolution:</strong> <span id="screen-resolution"></span></p>
+        <p><strong>Browser Window Size:</strong> <span id="window-size"></span></p>
+        <p><strong>Color Depth:</strong> <span id="color-depth"></span></p>
+        <p><strong>Timezone:</strong> <span id="timezone"></span></p>
+        <p><strong>Language:</strong> <span id="language"></span></p>
+    </div>
+    
+    <div class="data-box">
+        <h2>Device Information</h2>
+        <p><strong>Operating System:</strong> <span id="os"></span></p>
+        <p><strong>Device Type:</strong> <span id="device-type"></span></p>
+        <p><strong>CPU Cores:</strong> <span id="cpu-cores"></span></p>
+        <p><strong>Device Memory:</strong> <span id="device-memory"></span></p>
+        <p><strong>Battery Status:</strong> <span id="battery" class="loading">Checking...</span></p>
+    </div>
+    
+    <div class="data-box">
+        <h2>Connection Information</h2>
+        <p><strong>Network Type:</strong> <span id="connection-type" class="loading">Checking...</span></p>
+        <p><strong>Effective Connection Speed:</strong> <span id="connection-speed" class="loading">Checking...</span></p>
+        <p><strong>Online Status:</strong> <span id="online-status"></span></p>
+    </div>
+    
+    <div class="data-box">
+        <h2>Tracking & Identification</h2>
+        <p><strong>Cookies:</strong> <span id="cookies"></span></p>
+        <p><strong>Local Storage:</strong> <span id="local-storage"></span></p>
+        <p><strong>Session Storage:</strong> <span id="session-storage"></span></p>
+        <p><strong>Browser Fingerprint Score:</strong> <span id="fingerprint" class="loading">Calculating...</span></p>
+    </div>
+    
+    <div class="warning">
+        <strong>Remember:</strong> This is just a demonstration. Real websites might collect much more data, 
+        especially if you interact with them, log in, or grant permissions.
+    </div>
+
+    <script>
+        // Basic information
+        document.getElementById('user-agent').textContent = navigator.userAgent;
+        document.getElementById('screen-resolution').textContent = `${screen.width} × ${screen.height}`;
+        document.getElementById('window-size').textContent = `${window.innerWidth} × ${window.innerHeight}`;
+        document.getElementById('color-depth').textContent = `${screen.colorDepth} bit`;
+        document.getElementById('timezone').textContent = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        document.getElementById('language').textContent = navigator.language || navigator.languages[0];
+        
+        // Device information
+        const userAgent = navigator.userAgent.toLowerCase();
+        let os = "Unknown OS";
+        if (userAgent.includes("windows")) os = "Windows";
+        else if (userAgent.includes("mac")) os = "MacOS";
+        else if (userAgent.includes("linux")) os = "Linux";
+        else if (userAgent.includes("android")) os = "Android";
+        else if (userAgent.includes("ios") || userAgent.includes("iphone")) os = "iOS";
+        document.getElementById('os').textContent = os;
+        
+        let deviceType = "Desktop";
+        if (userAgent.includes("mobile")) deviceType = "Mobile";
+        else if (userAgent.includes("tablet")) deviceType = "Tablet";
+        document.getElementById('device-type').textContent = deviceType;
+        
+        document.getElementById('cpu-cores').textContent = navigator.hardwareConcurrency || "Unknown";
+        if (navigator.deviceMemory) {
+            document.getElementById('device-memory').textContent = `${navigator.deviceMemory} GB`;
+        } else {
+            document.getElementById('device-memory').textContent = "Unknown";
+        }
+        
+        // Battery API
+        if ('getBattery' in navigator) {
+            navigator.getBattery().then(battery => {
+                document.getElementById('battery').textContent = 
+                    `${Math.round(battery.level * 100)}% (${battery.charging ? "Charging" : "Not charging"})`;
+            });
+        } else {
+            document.getElementById('battery').textContent = "Not supported";
+        }
+        
+        // Connection information
+        if (navigator.connection) {
+            const connection = navigator.connection;
+            document.getElementById('connection-type').textContent = connection.type || "Unknown";
+            document.getElementById('connection-speed').textContent = connection.effectiveType || "Unknown";
+        } else {
+            document.getElementById('connection-type').textContent = "Not supported";
+            document.getElementById('connection-speed').textContent = "Not supported";
+        }
+        
+        document.getElementById('online-status').textContent = navigator.onLine ? "Online" : "Offline";
+        
+        // Geolocation
+        function getLocation() {
+            if (navigator.geolocation) {
+                document.getElementById('geolocation').innerHTML = '<span class="loading">Requesting location...</span>';
+                navigator.geolocation.getCurrentPosition(
+                    position => {
+                        document.getElementById('geolocation').innerHTML = 
+                            `Lat: ${position.coords.latitude.toFixed(4)}, Long: ${position.coords.longitude.toFixed(4)} ` +
+                            `<button onclick="showOnMap(${position.coords.latitude}, ${position.coords.longitude})">Show on Map</button>`;
+                    },
+                    error => {
+                        document.getElementById('geolocation').innerHTML = 
+                            `Error: ${error.message} ` +
+                            `<button onclick="getLocation()">Try Again</button>`;
+                    }
+                );
+            } else {
+                document.getElementById('geolocation').textContent = "Geolocation not supported";
+            }
+        }
+        
+        function showOnMap(lat, lng) {
+            window.open(`https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=16/${lat}/${lng}`, '_blank');
+        }
+        
+        // Cookies and storage
+        document.cookie = "test_cookie=example_value; path=/; max-age=3600";
+        document.getElementById('cookies').textContent = document.cookie;
+        
+        localStorage.setItem('test_local', 'example_local_value');
+        document.getElementById('local-storage').textContent = localStorage.getItem('test_local');
+        
+        sessionStorage.setItem('test_session', 'example_session_value');
+        document.getElementById('session-storage').textContent = sessionStorage.getItem('test_session');
+        
+        // Fingerprinting
+        setTimeout(() => {
+            // Simple fingerprint score based on available data points
+            let fingerprintScore = 0;
+            if (navigator.userAgent) fingerprintScore += 20;
+            if (screen.width && screen.height) fingerprintScore += 15;
+            if (navigator.language) fingerprintScore += 10;
+            if (Intl.DateTimeFormat().resolvedOptions().timeZone) fingerprintScore += 15;
+            if (navigator.hardwareConcurrency) fingerprintScore += 10;
+            if (navigator.deviceMemory) fingerprintScore += 10;
+            if (navigator.connection && navigator.connection.effectiveType) fingerprintScore += 10;
+            if (navigator.getBattery) fingerprintScore += 10;
+            
+            document.getElementById('fingerprint').textContent = `${fingerprintScore}/100 (estimate)`;
+        }, 1000);
+        
+        // Get IP addresses and location using APIs
+        function detectIPs() {
+            // IPv4 detection
+            fetch('https://api.ipify.org?format=json')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('ipv4-address').textContent = data.ip || "Not detected";
+                })
+                .catch(() => {
+                    document.getElementById('ipv4-address').textContent = "Could not detect";
+                });
+            
+            // IPv6 detection (will fall back to IPv4 if IPv6 isn't available)
+            fetch('https://api64.ipify.org?format=json')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.ip.includes(':')) {
+                        document.getElementById('ipv6-address').textContent = data.ip;
+                    } else {
+                        document.getElementById('ipv6-address').textContent = "No IPv6 detected (using IPv4)";
+                    }
+                })
+                .catch(() => {
+                    document.getElementById('ipv6-address').textContent = "Could not detect";
+                });
+            
+            // Location detection
+            fetch('https://ipapi.co/json/')
+                .then(response => response.json())
+                .then(data => {
+                    let locationStr = "";
+                    if (data.city) locationStr += data.city + ", ";
+                    if (data.region) locationStr += data.region + ", ";
+                    if (data.country_name) locationStr += data.country_name;
+                    if (locationStr) {
+                        document.getElementById('ip-location').textContent = locationStr;
+                    } else {
+                        document.getElementById('ip-location').textContent = "Location unavailable";
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('ip-location').textContent = "Could not detect location";
+                    console.error("Error fetching location info:", error);
+                });
+        }
+        
+        // Run IP detection when page loads
+        detectIPs();
+    </script>
+</body>
+</html>
